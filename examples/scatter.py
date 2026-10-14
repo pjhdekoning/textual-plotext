@@ -1,16 +1,25 @@
 """A small self-contained example of a Plotext plot in a Textual app."""
 
-from textual import on
+from __future__ import annotations
+
 from textual.app import App, ComposeResult
-from textual.events import Mount
 
 from textual_plotext import PlotextPlot
+
+
+class ScatterPlot(PlotextPlot):
+    """A simple scatter plot widget."""
+
+    def on_mount(self) -> None:
+        """Set up the plot."""
+        self.plt.scatter(self.plt.sin())
+        self.plt.title("Scatter Plot")
 
 
 class ScatterApp(App[None]):
     """Example Textual application showing a Plotext plot."""
 
-    BINDINGS = [
+    BINDINGS = [  # type: ignore[assignment] # noqa: RUF012
         ("[", "previous_theme", "Previous theme"),
         ("]", "next_theme", "Next theme"),
     ]
@@ -23,19 +32,14 @@ class ScatterApp(App[None]):
 
     def compose(self) -> ComposeResult:
         """Compose the plotting widget."""
-        yield PlotextPlot()
-
-    def on_mount(self) -> None:
-        plt = self.query_one(PlotextPlot).plt
-        plt.scatter(plt.sin())
-        plt.title("Scatter Plot")
+        yield ScatterPlot()
 
     def replot(self) -> None:
-        """Set up the plot."""
-        plt = self.query_one(PlotextPlot).plt
-        plt.clear_data()
-        plt.scatter(plt.sin())
-        self.refresh()
+        """Re-plot the scatter data."""
+        plot = self.query_one(ScatterPlot)
+        plot.plt.clear_data()
+        plot.plt.scatter(plot.plt.sin())
+        plot.refresh()
 
     def action_next_theme(self) -> None:
         themes = self.theme_names

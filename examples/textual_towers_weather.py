@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from itertools import cycle
 from json import loads
-from typing import Any
+from typing import Any, ClassVar, Final
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -16,7 +16,6 @@ from textual.containers import Grid
 from textual.message import Message
 from textual.reactive import var
 from textual.widgets import Footer, Header
-from typing_extensions import Final
 
 from textual_plotext import PlotextPlot
 
@@ -52,7 +51,10 @@ class Weather(PlotextPlot):
         self._unit = "Loading..."
         self._data: list[float] = []
         self._time: list[str] = []
-        self.watch(self.app, "theme", lambda: self.call_after_refresh(self.replot))
+        def _on_theme_change(theme: object) -> None:
+            self.call_after_refresh(self.replot)
+
+        self.watch(self.app, "theme", _on_theme_change)
 
     def on_mount(self) -> None:
         """Plot the data using Plotext."""
@@ -99,7 +101,7 @@ class TextualTowersWeatherApp(App[None]):
 
     TITLE = "Weather at Textual Towers Around a Year Ago"
 
-    BINDINGS = [
+    BINDINGS = [  # type: ignore[assignment] # noqa: RUF012
         ("d", "app.toggle_dark", "Toggle light/dark mode"),
         ("m", "marker", "Cycle example markers"),
         ("q", "app.quit", "Quit the example"),
@@ -107,7 +109,7 @@ class TextualTowersWeatherApp(App[None]):
         ("]", "next_theme", "Next theme"),
     ]
 
-    MARKERS = {
+    MARKERS: ClassVar[dict[str, str]] = {
         "dot": "Dot",
         "hd": "High Definition",
         "fhd": "Higher Definition",

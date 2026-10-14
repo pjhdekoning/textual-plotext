@@ -47,3 +47,15 @@ dev = [
     "ruff",
     "ty",
 ]
+
+[tool.ruff]
+include = ["src/**/*.py", "examples/**/*.py"]
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I", "UP", "RUF"]
+ignore = ["E741"]
+
+[tool.mypy]
+files = ["src", "examples"]
+scripts_are_modules = true
+mypy_path = "stubs"

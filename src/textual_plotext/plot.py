@@ -98,7 +98,7 @@ class Plot:
         self._plot = _plot_class(parent=self._terminal)
 
     @property
-    def _plt(self) -> Any:
+    def plt(self) -> Any:
         """The underlying plot_class instance."""
         return self._plot
 
@@ -158,7 +158,7 @@ class Plot:
 
     def title(self, label: str | None = None) -> None:
         """Set the plot title."""
-        self._plt.title(label)
+        self.plt.title(label)
 
     def label(
         self,
@@ -167,68 +167,68 @@ class Plot:
         side: str | int | None = None,
     ) -> None:
         """Set the label of the selected axis and side."""
-        self._plt.label(label, axis=axis, side=side)
+        self.plt.label(label, axis=axis, side=side)
 
     def xlabel(self, label: str | None = None) -> None:
         """Set the x-axis label."""
-        self._plt.label(label, axis=0)
+        self.plt.label(label, axis=0)
 
     def ylabel(self, label: str | None = None) -> None:
         """Set the y-axis label."""
-        self._plt.label(label, axis=1)
+        self.plt.label(label, axis=1)
 
     def theme(self, name: str) -> None:
         """Apply a named theme."""
-        self._plt.theme(name)
+        self.plt.theme(name)
 
     def canvas(self, background: Any = None) -> None:
         """Set the canvas background color."""
-        self._plt.canvas(background)
+        self.plt.canvas(background)
 
     def legend(self, active: bool = True, **kwargs: Any) -> None:
         """Configure the legend."""
-        self._plt.legend(active=active, **kwargs)
+        self.plt.legend(active=active, **kwargs)
 
     def axes(self, active: bool = True, **kwargs: Any) -> None:
         """Configure the axes."""
-        self._plt.axes(active=active, **kwargs)
+        self.plt.axes(active=active, **kwargs)
 
     # ---- Ruler methods (replace xscale, yscale, grid, ylim, xlim) ----
 
     def ruler(self, axis: int | None = None, side: str | int | None = None) -> Any:
         """Return the ruler selection for fine-grained control."""
-        return self._plt.ruler(axis=axis, side=side)
+        return self.plt.ruler(axis=axis, side=side)
 
     def xscale(self, scale: str) -> None:
         """Set the x-axis scale (e.g. 'log', 'linear')."""
-        self._plt.ruler(axis=0).scale(scale)
+        self.plt.ruler(axis=0).scale(scale)
 
     def yscale(self, scale: str) -> None:
         """Set the y-axis scale (e.g. 'log', 'linear')."""
-        self._plt.ruler(axis=1).scale(scale)
+        self.plt.ruler(axis=1).scale(scale)
 
     def xlim(self, lower: float | None = None, upper: float | None = None) -> None:
         """Set the x-axis limits."""
-        self._plt.ruler(axis=0).lim(lower=lower, upper=upper)
+        self.plt.ruler(axis=0).lim(lower=lower, upper=upper)
 
     def ylim(self, lower: float | None = None, upper: float | None = None) -> None:
         """Set the y-axis limits."""
-        self._plt.ruler(axis=1).lim(lower=lower, upper=upper)
+        self.plt.ruler(axis=1).lim(lower=lower, upper=upper)
 
     def grid(self, x: bool = True, y: bool = True) -> None:
         """Set grid visibility."""
-        self._plt.ruler(axis=0).grid(active=x)
-        self._plt.ruler(axis=1).grid(active=y)
+        self.plt.ruler(axis=0).grid(active=x)
+        self.plt.ruler(axis=1).grid(active=y)
 
     # ---- Date methods ----
 
     def date(self, axis: int | None = None, side: str | int | None = None) -> Any:
         """Return the date converter for the selected ruler."""
-        return self._plt.date(axis=axis, side=side)
+        return self.plt.date(axis=axis, side=side)
 
     def date_form(self, form: str) -> None:
         """Set the date format (legacy alias)."""
-        self._plt.date().activate()
+        self.plt.date().activate()
 
     # ---- Drawing methods ----
 
@@ -245,7 +245,7 @@ class Plot:
                 signal_kwargs[k] = v
             else:
                 draw_kwargs[k] = v
-        signal = self._plt.signal(*args, **signal_kwargs)
+        signal = self.plt.signal(*args, **signal_kwargs)
         # Apply fill/line settings on the signal object
         if draw_kwargs.get("fillx"):
             signal.fillx(draw_kwargs["fillx"])
@@ -257,7 +257,7 @@ class Plot:
             signal.line(style=draw_kwargs["style"])
         if draw_kwargs.get("color") is not None:
             signal.line(pixel=draw_kwargs["color"])
-        self._plt.draw(signal)
+        self.plt.draw(signal)
 
     def scatter(self, *args: Any, **kwargs: Any) -> None:
         """Draw a scatter plot (line with dot marker)."""
@@ -268,29 +268,29 @@ class Plot:
                 signal_kwargs[k] = v
             else:
                 draw_kwargs[k] = v
-        signal = self._plt.signal(*args, **signal_kwargs)
+        signal = self.plt.signal(*args, **signal_kwargs)
         if draw_kwargs.get("label") is not None:
             signal.label(draw_kwargs["label"])
         if draw_kwargs.get("color") is not None:
             signal.line(pixel=draw_kwargs["color"])
-        self._plt.draw(signal)
+        self.plt.draw(signal)
 
     def bar(self, *args: Any, **kwargs: Any) -> None:
         """Draw a bar plot."""
-        self._plt.bar(*args, **kwargs)
+        self.plt.bar(*args, **kwargs)
 
     def multiple_bar(self, *args: Any, **kwargs: Any) -> None:
         """Draw a multiple bar plot."""
-        self._plt.bar(*args, stacked=False, **kwargs)
+        self.plt.bar(*args, stacked=False, **kwargs)
 
     def stacked_bar(self, *args: Any, **kwargs: Any) -> None:
         """Draw a stacked bar plot."""
-        self._plt.bar(*args, stacked=True, **kwargs)
+        self.plt.bar(*args, stacked=True, **kwargs)
 
     def hist(self, *args: Any, **kwargs: Any) -> None:
         """Draw a histogram."""
         kwargs.pop("label", None)
-        self._plt.hist(*args, **kwargs)
+        self.plt.hist(*args, **kwargs)
 
     def error(self, *args: Any, **kwargs: Any) -> None:
         """Draw an error plot.
@@ -301,59 +301,59 @@ class Plot:
         kwargs.pop("label", None)
         kwargs.pop("xerr", None)
         kwargs.pop("yerr", None)
-        self._plt.error(*args, **kwargs)
+        self.plt.error(*args, **kwargs)
 
     def cmatrix(self, *args: Any, **kwargs: Any) -> None:
         """Draw a confusion matrix."""
-        self._plt.cmatrix(*args, **kwargs)
+        self.plt.cmatrix(*args, **kwargs)
 
     def heatmap(self, *args: Any, **kwargs: Any) -> None:
         """Draw a heatmap."""
-        self._plt.heatmap(*args, **kwargs)
+        self.plt.heatmap(*args, **kwargs)
 
     def box(self, *args: Any, **kwargs: Any) -> None:
         """Draw a box plot."""
-        self._plt.box(*args, **kwargs)
+        self.plt.box(*args, **kwargs)
 
     def candlestick(self, *args: Any, **kwargs: Any) -> None:
         """Draw a candlestick plot."""
-        self._plt.candlestick(*args, **kwargs)
+        self.plt.candlestick(*args, **kwargs)
 
     # ---- Decorator methods ----
 
     def text(self, *args: Any, **kwargs: Any) -> None:
         """Add text to the plot."""
-        self._plt.text(*args, **kwargs)
+        self.plt.text(*args, **kwargs)
 
     def polygon(self, *args: Any, **kwargs: Any) -> None:
         """Draw a polygon."""
-        self._plt.polygon(*args, **kwargs)
+        self.plt.polygon(*args, **kwargs)
 
     def rectangle(self, *args: Any, **kwargs: Any) -> None:
         """Draw a rectangle."""
-        self._plt.rectangle(*args, **kwargs)
+        self.plt.rectangle(*args, **kwargs)
 
     def vline(self, *args: Any, **kwargs: Any) -> None:
         """Draw a vertical line."""
-        self._plt.segment(*args, **kwargs)
+        self.plt.segment(*args, **kwargs)
 
     def hline(self, *args: Any, **kwargs: Any) -> None:
         """Draw a horizontal line."""
-        self._plt.segment(*args, **kwargs)
+        self.plt.segment(*args, **kwargs)
 
     # ---- Size and build ----
 
     def plotsize(self, width: int, height: int) -> None:
         """Set the plot size (legacy alias for _set_size)."""
-        self._plt._set_size(width, height)
+        self.plt._set_size(width, height)
 
     def _set_size(self, width: int, height: int) -> None:
         """Set the plot size."""
-        self._plt._set_size(width, height)
+        self.plt._set_size(width, height)
 
     def build(self) -> str:
         """Build the plot and return the ANSI string."""
-        return self._plt.build().string()
+        return self.plt.build().string()
 
     def show(self) -> None:
         """Stub function. This should never be called within Textual."""
@@ -368,20 +368,20 @@ class Plot:
 
     def clear_data(self) -> None:
         """Clear all data from the plot."""
-        self._plt.clear()
+        self.plt.clear()
 
     # ---- Matrix plot (heatmap) ----
 
     def matrix_plot(self, data: list[list[Any]], **kwargs: Any) -> None:
         """Draw a matrix plot (heatmap)."""
-        self._plt.heatmap(data, **kwargs)
+        self.plt.heatmap(data, **kwargs)
 
     # ---- Event plot ----
 
     def event_plot(self, times: list[str], **kwargs: Any) -> None:
         """Draw an event plot from time strings."""
-        signal = self._plt.signal(times, **kwargs)
-        self._plt.draw(signal)
+        signal = self.plt.signal(times, **kwargs)
+        self.plt.draw(signal)
 
     # ---- Datetime helper ----
 

@@ -253,7 +253,7 @@ class SpecialPlots(ExamplesPane):
             self.plt.date_form("H:M")
             times = self.plt.datetimes_to_string(
                 [
-                    datetime(  # noqa: DTZ001
+                    datetime(
                         2022,
                         3,
                         27,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from itertools import cycle
+from typing import cast
 
 from textual import on
 from textual.app import App, ComposeResult
@@ -10,10 +11,10 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.events import Mount
 from textual.reactive import var
-from textual.widgets import Header, Footer, OptionList
+from textual.widgets import Footer, Header, OptionList
 from textual.widgets.option_list import Option
 
-from textual_plotext import PlotextPlot, themes
+from textual_plotext import PlotextPlot, PlotextThemeName, themes
 
 
 class ThemeSample(PlotextPlot):
@@ -48,7 +49,7 @@ class ThemeSample(PlotextPlot):
     def replot(self) -> None:
         """Replot the sample."""
         self.plt.theme(self.theme)
-        self.plt.clear_figure()
+        self.plt.clear_data()
         self.plt.title("This is the title")
         if self.swatch_mode:
             self.plt.multiple_bar(["Swatch sample"], [[1]] * 20)
@@ -91,7 +92,7 @@ class ThemeApp(App[None]):
 
     TITLE = "Plotext theme explorer"
 
-    BINDINGS = [
+    BINDINGS = [  # type: ignore[assignment] # noqa: RUF012
         Binding("d", "toggle_dark", "Light/Dark"),
         Binding("m", "marker", "Change markers"),
         Binding("s", "toggle_swatch", "Plot/Swatch"),
@@ -119,7 +120,7 @@ class ThemeApp(App[None]):
             yield OptionList(
                 *[
                     Option(theme.capitalize(), id=theme.lower())
-                    for theme in ("auto",) + themes()
+                    for theme in (*("auto",), *themes())
                     if not theme.startswith("textual-")
                 ],
                 id="themes",
@@ -144,15 +145,21 @@ class ThemeApp(App[None]):
         """
         if event.option_id is not None:
             if event.option_id.startswith("textual-design"):
-                self.query_one("#exclusive", ThemeSample).theme = event.option_id
+                self.query_one("#exclusive", ThemeSample).theme = cast(
+                    PlotextThemeName, event.option_id
+                )
                 self.query(".shared").add_class("invisible")
                 self.query(".exclusive").remove_class("invisible")
                 self.dark = event.option_id == "textual-design-dark"
             else:
-                self.query_one("#plotext", ThemeSample).theme = event.option_id
+                self.query_one("#plotext", ThemeSample).theme = cast(
+                    PlotextThemeName, event.option_id
+                )
                 self.query_one(
                     "#textual", ThemeSample
-                ).theme = f"textual-{event.option_id}"
+                ).theme = cast(
+                    PlotextThemeName, f"textual-{event.option_id}"
+                )
                 self.query(".shared").remove_class("invisible")
                 self.query(".exclusive").add_class("invisible")
 

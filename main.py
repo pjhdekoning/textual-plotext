@@ -2,8 +2,8 @@ from textual.app import App, ComposeResult
 
 from textual_plotext import PlotextPlot
 
-class ScatterApp(App[None]):
 
+class ScatterApp(App[None]):
     def compose(self) -> ComposeResult:
         yield PlotextPlot()
 
@@ -12,6 +12,7 @@ class ScatterApp(App[None]):
         y = plt.sin()  # sinusoidal test signal
         plt.scatter(y)
         plt.title("Scatter Plot")  # to apply a title
+
 
 if __name__ == "__main__":
     ScatterApp().run()

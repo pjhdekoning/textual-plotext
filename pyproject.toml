@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "textual-plotext"
-version = "1.0.1"
+version = "1.1.0"
 description = "A Textual widget wrapper for the Plotext plotting library"
 homepage = "https://github.com/Textualize/textual-plotext"
 repository = "https://github.com/Textualize/textual-plotext"

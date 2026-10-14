@@ -1,16 +1,17 @@
 """Provides a widget for creating and displaying a Plotext plot."""
 
 from __future__ import annotations
+
 from typing import Literal
 
+import plotext
 from rich.text import Text
 from textual.app import RenderResult
+from textual.color import Color
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.color import Color
-from .plot import Plot, PlotextThemeName, _rgbify_theme, _sequence
 
-from plotext._dict import themes as _themes
+from .plot import Plot, PlotextThemeName
 
 
 class PlotextPlot(Widget):
@@ -86,16 +87,6 @@ class PlotextPlot(Widget):
         Returns:
             The renderable for displaying the plot.
         """
-        self._plot.plotsize(self.size.width, self.size.height)
-        # This is a belt-and-braces setting of the size of the plot.
-        # Internally plotsize calls _set_plot, and as best as I can figure
-        # out, what I'm doing here *should* be a no-op (or rather a repeat
-        # of what I've just done). And yet... the resizing of plots just
-        # doesn't work right without this. This *might* be some
-        # as-yet-undiscovered side-effect of dumpster-diving for the figure
-        # class.
-        #
-        # https://github.com/Textualize/textual-plotext/issues/5
         self._plot._set_size(self.size.width, self.size.height)
         # If the theme is set to "auto" ensure the theme is registered with Plotext.
         plotext_theme_name = self._get_plotext_theme_name(self.app.theme)
@@ -117,14 +108,13 @@ class PlotextPlot(Widget):
 
         plotext_theme_name = self._get_plotext_theme_name(app_theme_name)
         app_theme_variables = self.app.theme_variables
-        if plotext_theme_name not in _themes:
-            _themes[plotext_theme_name] = _rgbify_theme(
-                Color.parse(app_theme_variables.get("surface")).rgb,
-                Color.parse(app_theme_variables.get("surface")).rgb,
-                Color.parse(app_theme_variables.get("foreground")).rgb,
-                "default",
-                _sequence,
-            )
+        surface_rgb = Color.parse(app_theme_variables.get("surface")).rgb
+        foreground_rgb = Color.parse(app_theme_variables.get("foreground")).rgb
+        plotext.add_theme(
+            plotext_theme_name,
+            canvas=surface_rgb,
+            text=foreground_rgb,
+        )
         self.refresh()
 
     def _get_plotext_theme_name(self, app_theme_name: str) -> str:

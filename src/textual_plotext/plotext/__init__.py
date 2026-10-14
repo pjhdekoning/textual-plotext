@@ -1,7 +1,22 @@
 """Wrapper module for the main Plotext module.
 
-Designed to help type hint the public symbols in the module. See also the
-accompanying pyi file for the types.
+Re-exports the public plotext symbols needed by the Plot class.
 """
 
-from plotext import *
+from plotext import (
+    add_theme,
+    colorize,
+    platform,
+    sin,
+    square,
+    uncolorize,
+)
+
+__all__ = [
+    "add_theme",
+    "colorize",
+    "platform",
+    "sin",
+    "square",
+    "uncolorize",
+]

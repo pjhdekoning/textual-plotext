@@ -5,9 +5,7 @@ the code of this library; but as time goes on this could turn into a set of
 stubs for the whole of Plotext.
 """
 
-from __future__ import annotations
 
-from typing import Any
 
 def sin(
     periods: int,
@@ -25,6 +23,5 @@ def colorize(
     show: bool,
 ) -> str: ...
 def uncolorize(string: str) -> str: ...
-def transpose(data: list[list[Any]]) -> list[list[Any]]: ...
-
 platform: str = ...
+def add_theme(name: str, canvas=None, text=None, sequence=None, grid=None) -> None: ...

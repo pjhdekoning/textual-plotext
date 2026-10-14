@@ -1,9 +1,9 @@
-"""Wrapper module for the Plotext _figure_class.
+"""Wrapper module for the Plotext plot_class.
 
-Designed to help type hint the methods in the class. See also the
-accompanying pyi file for the types.
+In plotext 6+ the figure class is plotext._plotter.plot.plot_class.
+This module re-exports it for backward compatibility.
 """
 
-from plotext._figure import _figure_class
+from plotext._plotter.plot import plot_class as _figure_class
 
 __all__ = ["_figure_class"]

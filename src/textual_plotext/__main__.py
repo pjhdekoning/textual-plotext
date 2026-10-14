@@ -90,7 +90,7 @@ class BasicPlots(ExamplesPane):
             self.plt.plot(self.plt.sin(periods=2, length=10**4))
             self.plt.xscale("log")
             self.plt.yscale("linear")
-            self.plt.grid(0, 1)
+            self.plt.grid(False, True)
             self.plt.title("Logarithmic Plot")
             self.plt.xlabel("logarithmic scale")
             self.plt.ylabel("linear scale")
@@ -253,7 +253,7 @@ class SpecialPlots(ExamplesPane):
             self.plt.date_form("H:M")
             times = self.plt.datetimes_to_string(
                 [
-                    datetime(
+                    datetime(  # noqa: DTZ001
                         2022,
                         3,
                         27,

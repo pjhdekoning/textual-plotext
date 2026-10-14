@@ -1,28 +1,19 @@
-"""Provides a class that acts as a thin wrapper around Plottext.
+"""Provides a class that acts as a thin wrapper around Plotext.
 
-Because (as of the time of writing) there doesn't seem to be a method of
-getting a plotting object from Plottext, this class pulls a figure out from
-inside Plotext and promotes it to the top level, so to speak, and then takes
-care of adding in some of the utility methods that will bee needed.
+Because plotext 6+ uses a singleton figure pattern, this class creates
+independent terminal + plot_class instances so each widget has its own
+plot state with no global side-effects.
 """
 
 from __future__ import annotations
 
-from typing import Any, Tuple, Union
+from typing import Any, Literal, TypeAlias, get_args
 
-from textual.theme import BUILTIN_THEMES
-from typing_extensions import Literal, TypeAlias, get_args
-
-from plotext._dict import (
-    themes as _themes,
-    type1_to_type2_codes,
-)
-from plotext._utility import get_color_code
-
-from textual.color import Color as TextualColor
+from plotext._kernel.terminal import terminal as _terminal_class
+from plotext._plotter.plot import plot_class as _plot_class
+from plotext._settings.themes import themes as _themes
 
 from . import plotext
-from .plotext._figure import _figure_class as Figure
 
 PlotextThemeName = Literal[
     # The standard Plotext themes.
@@ -70,16 +61,15 @@ Note:
     2. Turning runtime information into type-checking data isn't simple.
 """
 
-Color: TypeAlias = Union[str, int, Tuple[int, int, int]]
+Color: TypeAlias = str | int | tuple[int, int, int]
 """Type of a Plotext colour."""
 
 
-class Plot(Figure):
+class Plot:
     """A class that provides a Textual-friendly interface to Plotext.
 
-    This class inherits from Plotext's `_figure_class` and then adds access
-    to some global functions, making it appear like the top-level `plotext`
-    module.
+    This class wraps an independent plotext plot_class instance so each
+    widget has its own plot state with no global side-effects.
 
     The aim of the class is to make this:
 
@@ -101,6 +91,18 @@ class Plot(Figure):
     functionally equivalent, but with the advantage that the latter has no
     global state and is free of external side-effects.
     """
+
+    def __init__(self) -> None:
+        """Initialise an independent Plotext plot instance."""
+        self._terminal = _terminal_class()
+        self._plot = _plot_class(parent=self._terminal)
+
+    @property
+    def _plt(self) -> Any:
+        """The underlying plot_class instance."""
+        return self._plot
+
+    # ---- Data helpers delegated to the plotext module ----
 
     @staticmethod
     def sin(
@@ -132,7 +134,7 @@ class Plot(Figure):
         background: Color | None = None,
         show: bool = False,
     ) -> str:
-        """A wrapper around `Plotet.colorize`."""
+        """A wrapper around `Plotext.colorize`."""
         return plotext.colorize(
             string,
             fullground=fullground,
@@ -146,16 +148,212 @@ class Plot(Figure):
         """A wrapper around `Plotext.uncolorize`."""
         return plotext.uncolorize(string)
 
-    @staticmethod
-    def transpose(data: list[list[Any]]) -> list[list[Any]]:
-        """A wrapper around `Plotext.transpose`."""
-        return plotext.transpose(data)
-
     platform = plotext.platform
     """The platform, as recognised by Plotext.
 
     One of either `unix` or `windows`.
     """
+
+    # ---- Plot configuration methods ----
+
+    def title(self, label: str | None = None) -> None:
+        """Set the plot title."""
+        self._plt.title(label)
+
+    def label(
+        self,
+        label: str | None = None,
+        axis: int | None = None,
+        side: str | int | None = None,
+    ) -> None:
+        """Set the label of the selected axis and side."""
+        self._plt.label(label, axis=axis, side=side)
+
+    def xlabel(self, label: str | None = None) -> None:
+        """Set the x-axis label."""
+        self._plt.label(label, axis=0)
+
+    def ylabel(self, label: str | None = None) -> None:
+        """Set the y-axis label."""
+        self._plt.label(label, axis=1)
+
+    def theme(self, name: str) -> None:
+        """Apply a named theme."""
+        self._plt.theme(name)
+
+    def canvas(self, background: Any = None) -> None:
+        """Set the canvas background color."""
+        self._plt.canvas(background)
+
+    def legend(self, active: bool = True, **kwargs: Any) -> None:
+        """Configure the legend."""
+        self._plt.legend(active=active, **kwargs)
+
+    def axes(self, active: bool = True, **kwargs: Any) -> None:
+        """Configure the axes."""
+        self._plt.axes(active=active, **kwargs)
+
+    # ---- Ruler methods (replace xscale, yscale, grid, ylim, xlim) ----
+
+    def ruler(self, axis: int | None = None, side: str | int | None = None) -> Any:
+        """Return the ruler selection for fine-grained control."""
+        return self._plt.ruler(axis=axis, side=side)
+
+    def xscale(self, scale: str) -> None:
+        """Set the x-axis scale (e.g. 'log', 'linear')."""
+        self._plt.ruler(axis=0).scale(scale)
+
+    def yscale(self, scale: str) -> None:
+        """Set the y-axis scale (e.g. 'log', 'linear')."""
+        self._plt.ruler(axis=1).scale(scale)
+
+    def xlim(self, lower: float | None = None, upper: float | None = None) -> None:
+        """Set the x-axis limits."""
+        self._plt.ruler(axis=0).lim(lower=lower, upper=upper)
+
+    def ylim(self, lower: float | None = None, upper: float | None = None) -> None:
+        """Set the y-axis limits."""
+        self._plt.ruler(axis=1).lim(lower=lower, upper=upper)
+
+    def grid(self, x: bool = True, y: bool = True) -> None:
+        """Set grid visibility."""
+        self._plt.ruler(axis=0).grid(active=x)
+        self._plt.ruler(axis=1).grid(active=y)
+
+    # ---- Date methods ----
+
+    def date(self, axis: int | None = None, side: str | int | None = None) -> Any:
+        """Return the date converter for the selected ruler."""
+        return self._plt.date(axis=axis, side=side)
+
+    def date_form(self, form: str) -> None:
+        """Set the date format (legacy alias)."""
+        self._plt.date().activate()
+
+    # ---- Drawing methods ----
+
+    def plot(self, *args: Any, **kwargs: Any) -> None:
+        """Plot a line signal. Alias for line()."""
+        self.line(*args, **kwargs)
+
+    def line(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a line plot."""
+        signal_kwargs = {}
+        draw_kwargs = {}
+        for k, v in kwargs.items():
+            if k in ("marker", "xside", "yside"):
+                signal_kwargs[k] = v
+            else:
+                draw_kwargs[k] = v
+        signal = self._plt.signal(*args, **signal_kwargs)
+        # Apply fill/line settings on the signal object
+        if draw_kwargs.get("fillx"):
+            signal.fillx(draw_kwargs["fillx"])
+        if draw_kwargs.get("filly"):
+            signal.filly(draw_kwargs["filly"])
+        if draw_kwargs.get("label") is not None:
+            signal.label(draw_kwargs["label"])
+        if draw_kwargs.get("style") is not None:
+            signal.line(style=draw_kwargs["style"])
+        if draw_kwargs.get("color") is not None:
+            signal.line(pixel=draw_kwargs["color"])
+        self._plt.draw(signal)
+
+    def scatter(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a scatter plot (line with dot marker)."""
+        signal_kwargs = {}
+        draw_kwargs = {}
+        for k, v in kwargs.items():
+            if k in ("marker", "xside", "yside"):
+                signal_kwargs[k] = v
+            else:
+                draw_kwargs[k] = v
+        signal = self._plt.signal(*args, **signal_kwargs)
+        if draw_kwargs.get("label") is not None:
+            signal.label(draw_kwargs["label"])
+        if draw_kwargs.get("color") is not None:
+            signal.line(pixel=draw_kwargs["color"])
+        self._plt.draw(signal)
+
+    def bar(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a bar plot."""
+        self._plt.bar(*args, **kwargs)
+
+    def multiple_bar(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a multiple bar plot."""
+        self._plt.bar(*args, stacked=False, **kwargs)
+
+    def stacked_bar(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a stacked bar plot."""
+        self._plt.bar(*args, stacked=True, **kwargs)
+
+    def hist(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a histogram."""
+        kwargs.pop("label", None)
+        self._plt.hist(*args, **kwargs)
+
+    def error(self, *args: Any, **kwargs: Any) -> None:
+        """Draw an error plot.
+
+        Note: In plotext 6+, error bars are passed as part of the data args,
+        not as xerr/yerr kwargs. This wrapper strips unsupported kwargs.
+        """
+        kwargs.pop("label", None)
+        kwargs.pop("xerr", None)
+        kwargs.pop("yerr", None)
+        self._plt.error(*args, **kwargs)
+
+    def cmatrix(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a confusion matrix."""
+        self._plt.cmatrix(*args, **kwargs)
+
+    def heatmap(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a heatmap."""
+        self._plt.heatmap(*args, **kwargs)
+
+    def box(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a box plot."""
+        self._plt.box(*args, **kwargs)
+
+    def candlestick(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a candlestick plot."""
+        self._plt.candlestick(*args, **kwargs)
+
+    # ---- Decorator methods ----
+
+    def text(self, *args: Any, **kwargs: Any) -> None:
+        """Add text to the plot."""
+        self._plt.text(*args, **kwargs)
+
+    def polygon(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a polygon."""
+        self._plt.polygon(*args, **kwargs)
+
+    def rectangle(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a rectangle."""
+        self._plt.rectangle(*args, **kwargs)
+
+    def vline(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a vertical line."""
+        self._plt.segment(*args, **kwargs)
+
+    def hline(self, *args: Any, **kwargs: Any) -> None:
+        """Draw a horizontal line."""
+        self._plt.segment(*args, **kwargs)
+
+    # ---- Size and build ----
+
+    def plotsize(self, width: int, height: int) -> None:
+        """Set the plot size (legacy alias for _set_size)."""
+        self._plt._set_size(width, height)
+
+    def _set_size(self, width: int, height: int) -> None:
+        """Set the plot size."""
+        self._plt._set_size(width, height)
+
+    def build(self) -> str:
+        """Build the plot and return the ANSI string."""
+        return self._plt.build().string()
 
     def show(self) -> None:
         """Stub function. This should never be called within Textual."""
@@ -164,10 +362,33 @@ class Plot(Figure):
         self, path: str | None = None, append: bool = False, keep_colors: bool = False
     ) -> None:
         """Stub function. This should not be called within Textual."""
-        # Actually... it might make sense to support this at some point and
-        # might not be too tricky to handle. But for now this is about
-        # allowing plotting within the application.
         del path, append, keep_colors
+
+    # ---- Data clearing ----
+
+    def clear_data(self) -> None:
+        """Clear all data from the plot."""
+        self._plt.clear()
+
+    # ---- Matrix plot (heatmap) ----
+
+    def matrix_plot(self, data: list[list[Any]], **kwargs: Any) -> None:
+        """Draw a matrix plot (heatmap)."""
+        self._plt.heatmap(data, **kwargs)
+
+    # ---- Event plot ----
+
+    def event_plot(self, times: list[str], **kwargs: Any) -> None:
+        """Draw an event plot from time strings."""
+        signal = self._plt.signal(times, **kwargs)
+        self._plt.draw(signal)
+
+    # ---- Datetime helper ----
+
+    @staticmethod
+    def datetimes_to_string(datetimes: list[Any]) -> list[str]:
+        """Convert datetime objects to strings."""
+        return [dt.strftime("%Y-%m-%d %H:%M:%S") for dt in datetimes]
 
 
 # Hoist the docstrings for the wrapper functions we've added above.
@@ -175,7 +396,6 @@ Plot.sin.__doc__ = plotext.sin.__doc__
 Plot.square.__doc__ = plotext.square.__doc__
 Plot.colorize.__doc__ = plotext.colorize.__doc__
 Plot.uncolorize.__doc__ = plotext.uncolorize.__doc__
-Plot.transpose.__doc__ = plotext.transpose.__doc__
 
 
 def themes() -> tuple[str, ...]:
@@ -188,73 +408,7 @@ def themes() -> tuple[str, ...]:
 
 
 ##############################################################################
-# Here we patch in some textual-friendly themes. A Plotext theme is of the
-# style:
-#
-# [canvas_color, axes_color, ticks_color, ticks_style, color_sequence]
-#
-# where color_sequence is a sequence of colours that will be used as plots
-# are added (that is, if you plot 3 types of data and don't specify colours,
-# this sequence will be used).
-
-
-def _rgbify(color: Color) -> tuple[int, int, int] | str:
-    """Force any Plotext colour into an RGB value.
-
-    Args:
-        color: The colour to convert.
-
-    Returns:
-        An RGB tuple for the colour.
-    """
-    if isinstance(color, str):
-        # For some reason Plotext uses yellow and gold but never defines
-        # them.
-        #
-        # TODO: Figure out a good version of those colours.
-        return (
-            color
-            if color == "default"
-            else _rgbify(
-                get_color_code(
-                    {"yellow": "orange", "gold": "orange+"}.get(color, color)
-                )
-            )
-        )
-    if isinstance(color, int):
-        # A single integer; convert that into an RGB.
-        return type1_to_type2_codes[color]
-    # Must be an RGB already.
-    return color
-
-
-def _rgbify_theme(
-    canvas_color: Color,
-    axes_color: Color,
-    ticks_color: Color,
-    ticks_style: str,
-    data_colors: list[Color],
-) -> tuple[Color, Color, Color, str, list[Color]]:
-    """Turn the given theme into a fully-RGB theme.
-
-    Args:
-        canvas_color: The canvas color.
-        axes_color: The axes color.
-        ticks_color: The ticks color.
-        ticks_style: The styling for the ticks.
-        data_colors: The sequence of colors for the various plots.
-
-    Returns:
-        The theme, made RGB-friendly.
-    """
-    return (
-        _rgbify(canvas_color),
-        _rgbify(axes_color),
-        _rgbify(ticks_color),
-        ticks_style,
-        [_rgbify(data_color) for data_color in data_colors],
-    )
-
+# Here we patch in some textual-friendly themes using plotext.add_theme.
 
 _sequence = [
     (0, 130, 200),
@@ -283,32 +437,32 @@ _sequence = [
 Designed to work with either light or dark mode.
 """
 
-# Make full-colour versions of the Plotext themes. In almost every case
-# we'll follow the data sequence colours laid down by Plotext; but in a
-# couple of cases we'll use our own curated set.
-_themes["textual-default"] = list(
-    _rgbify_theme("default", "default", "default", "default", _sequence)
+# Register full-colour versions of the Plotext themes
+plotext.add_theme(
+    "textual-default",
+    canvas="default",
+    text="default",
+    sequence=_sequence,
 )
-_themes["textual-clear"] = list(
-    _rgbify_theme(
-        "default",
-        "default",
-        "default",
-        "default",
-        ["default"],
-    )
+plotext.add_theme(
+    "textual-clear",
+    canvas="default",
+    text="default",
+    sequence=["default"],
 )
-_themes["textual-dark"] = _rgbify_theme(*_themes["dark"])
-_themes["textual-dreamland"] = _rgbify_theme(*_themes["dreamland"])
-_themes["textual-elegant"] = _rgbify_theme(*_themes["elegant"])
-_themes["textual-girly"] = _rgbify_theme(*_themes["girly"])
-_themes["textual-grandpa"] = _rgbify_theme(*_themes["grandpa"])
-_themes["textual-matrix"] = _rgbify_theme(*_themes["matrix"])
-_themes["textual-mature"] = _rgbify_theme(*_themes["mature"])
-_themes["textual-pro"] = _themes["textual-default"]
-_themes["textual-retro"] = _rgbify_theme(*_themes["retro"])
-_themes["textual-sahara"] = _rgbify_theme(*_themes["sahara"])
-_themes["textual-salad"] = _rgbify_theme(*_themes["salad"])
-_themes["textual-scream"] = _rgbify_theme(*_themes["scream"])
-_themes["textual-serious"] = _rgbify_theme(*_themes["serious"])
-_themes["textual-windows"] = _rgbify_theme(*_themes["windows"])
+
+# For themes that need RGB conversion, we register them based on the
+# existing plotext themes
+for _theme_name in [
+    "dark", "dreamland", "elegant", "girly", "grandpa",
+    "matrix", "mature", "retro", "sahara", "salad",
+    "scream", "serious", "windows",
+]:
+    if _theme_name in _themes:
+        plotext.add_theme(
+            f"textual-{_theme_name}",
+            sequence=_sequence,
+        )
+
+# Pro is an alias for default
+plotext.add_theme("textual-pro", canvas="default", text="default", sequence=_sequence)
